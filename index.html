@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <style>
+    :root { --bg-sidebar: #2c3136; --bg-main: #e2e1df; --primary-blue: #1a73e8; --text-sidebar: #a0a5aa; --card-bg: #f5f5f5; }
+    body { font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; background-color: var(--bg-main); }
+    
+    .sidebar { width: 260px; background-color: var(--bg-sidebar); color: var(--text-sidebar); display: flex; flex-direction: column; flex-shrink: 0; }
+    .logo-area { padding: 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid #3a3f44; color: white; font-weight: 600; font-size: 14px; }
+    .menu-item { padding: 15px 20px; margin: 5px 15px; cursor: pointer; border-radius: 8px; font-weight: 500; transition: 0.2s; }
+    .menu-item.active { background-color: var(--primary-blue); color: white; }
+    .menu-item:hover:not(.active) { background-color: #3a3f44; color: white; }
+    .menu-divider { height: 1px; background-color: #3a3f44; margin: 15px; }
+
+    .main-content { flex: 1; padding: 40px; overflow-y: auto; display: flex; justify-content: center; align-items: flex-start; }
+    .tela { display: none; background-color: var(--card-bg); border-radius: 12px; padding: 35px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #e0e0e0; width: 100%; max-width: 1100px; }
+    .tela.active { display: block; }
+
+    .btn { background-color: var(--primary-blue); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.3s; }
+    .btn:hover { background-color: #1557b0; }
+    .btn-secondary { background-color: #7d8285; }
+    .btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+    .header-acao { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; padding-bottom: 15px; margin-bottom: 25px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; border-radius: 8px; overflow: hidden; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; }
+    th { font-size: 12px; color: #666; text-transform: uppercase; background: #eee; }
+    
+    .grid-duas-colunas { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+    .grid-tres-colunas { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+    
+    .box-cinza { border: 2px dashed #ccc; border-radius: 8px; padding: 30px; text-align: center; background: white; cursor: pointer; transition: 0.2s; }
+    .box-cinza:hover { border-color: var(--primary-blue); background-color: #f8faff; }
+
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; justify-content: center; align-items: center; }
+    .modal-content { background: white; padding: 30px; border-radius: 8px; width: 450px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; font-size: 13px; color: #666; margin-bottom: 5px; font-weight: 600; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-family: 'Inter', sans-serif;}
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="logo-area">
+      <div style="background-color: var(--primary-blue); color: white; padding: 8px; border-radius: 6px;">ılı</div>
+      <div>CONTROLADORIA<br><span style="color:white; font-size:16px;">COTAÇÕES</span></div>
+    </div>
+    <div style="padding: 15px 20px 5px; font-size: 11px; color: #888; text-transform: uppercase;">Operação</div>
+    <div class="menu-item active" onclick="mudarTela('tela-cotacoes', this)">Gestão de Cotações</div>
+    <div class="menu-item" onclick="mudarTela('tela-dashboard', this)">Dashboard e Relatórios</div>
+    <div class="menu-divider"></div>
+    <div style="padding: 15px 20px 5px; font-size: 11px; color: #888; text-transform: uppercase;">Cadastros Base</div>
+    <div class="menu-item" onclick="mudarTela('tela-fornecedores', this)">Cadastro de Fornecedores</div>
+    <div class="menu-item" onclick="mudarTela('tela-planilhas', this)">Planilhas Padrões</div>
+  </div>
+
+  <div class="main-content">
+    
+    <div id="tela-cotacoes" class="tela active">
+      <div class="header-acao"><h2 style="margin:0;">Gestão de Cotações</h2></div>
+      <div class="grid-duas-colunas">
+        <div>
+          <h3>1. Disparar Solicitações</h3>
+          <div id="tabela-envio" style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px;">A carregar...</div>
+          <button id="btn-enviar" class="btn" style="margin-top: 15px; width: 100%;" onclick="enviarEmails()" disabled>Disparar E-mails</button>
+        </div>
+        <div>
+          <h3>2. Processar Retornos</h3>
+          <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <div style="flex: 1;"><label style="font-size: 12px; color: #666; font-weight: 600;">Mês e Ano:</label><input type="month" id="upload-mes" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; margin-top: 5px;"></div>
+            <div style="flex: 1;"><label style="font-size: 12px; color: #666; font-weight: 600;">Rodada:</label><input type="text" id="upload-rodada" placeholder="Ex: 1" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; margin-top: 5px;"></div>
+          </div>
+          <div class="box-cinza" onclick="document.getElementById('arquivo-upload').click()">
+            <span id="texto-upload">Clique para anexar o ficheiro (.CSV)</span>
+            <input type="file" id="arquivo-upload" accept=".csv" style="display:none;" onchange="exibirNomeArquivo()">
+          </div>
+          <button id="btn-importar" class="btn" style="margin-top: 15px; width: 100%;" onclick="importarRetorno()" disabled>Importar Dados</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="tela-dashboard" class="tela">
+      <div class="header-acao">
+        <h2 style="margin:0;">Dashboard de Decisão</h2>
+        <button class="btn btn-secondary" onclick="carregarFiltrosDashboard()">🔄 Atualizar Filtros</button>
+      </div>
+
+      <div class="grid-tres-colunas" style="margin-bottom: 25px; background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label>Mês/Ano da Cotação (Obrigatório):</label>
+          <select id="dash-filtro-mes" onchange="gerarDashboard()">
+            <option value="">Selecione...</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label>Tipo de Material (Opcional):</label>
+          <select id="dash-filtro-material" onchange="gerarDashboard()">
+            <option value="">Todos os Tipos (Geral)</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label>Rodada Específica (Opcional):</label>
+          <select id="dash-filtro-rodada" onchange="gerarDashboard()">
+            <option value="">Última Rodada (Evolução)</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="dash-kpis" style="display: none; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+        <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; border: 1px solid #c8e6c9; text-align: center;">
+          <h4 style="margin: 0; color: #2e7d32; font-size: 14px; text-transform: uppercase;">Menor Preço Ofertado</h4>
+          <h2 id="kpi-menor-preco" style="margin: 10px 0 0 0; color: #1b5e20; font-size: 28px;">R$ 0,00</h2>
+        </div>
+        <div style="background: #e3f2fd; padding: 20px; border-radius: 8px; border: 1px solid #bbdefb; text-align: center;">
+          <h4 style="margin: 0; color: #1565c0; font-size: 14px; text-transform: uppercase;">Melhor Fornecedor</h4>
+          <h2 id="kpi-melhor-fornecedor" style="margin: 10px 0 0 0; color: #0d47a1; font-size: 22px;">-</h2>
+        </div>
+      </div>
+
+      <div id="dash-conteudo" style="display: none;">
+        <div class="grid-duas-colunas" style="gap: 20px;">
+          <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
+            <h3 style="margin-top: 0; font-size: 15px; color: #333;">📉 Evolução do Menor Preço (Por Rodada)</h3>
+            <div id="grafico-evolucao" style="width: 100%; height: 250px;"></div>
+          </div>
+          <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd; max-height: 350px; overflow-y: auto;">
+            <h3 style="margin-top: 0; font-size: 15px; color: #333;">🏆 Comparativo de Fornecedores (Na Rodada)</h3>
+            <div id="tabela-decisao-container"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div id="dash-mensagem" style="text-align: center; color: #888; padding: 30px;">
+        Selecione um Mês/Ano acima para gerar o relatório.
+      </div>
+    </div>
+
+    <div id="tela-fornecedores" class="tela">
+      <div class="header-acao"><h2 style="margin:0;">Cadastro de Fornecedores</h2><button class="btn" onclick="abrirModalFornecedor()">+ Novo Fornecedor</button></div>
+      <div id="tabela-cadastro-fornecedores">A carregar...</div>
+    </div>
+
+    <div id="tela-planilhas" class="tela">
+      <div class="header-acao"><h2 style="margin:0;">Itens da Cotação Padrão</h2><button class="btn" onclick="abrirModalItem()">+ Adicionar Material</button></div>
+      <div id="tabela-materiais" style="max-height: 500px; overflow-y: auto;">A carregar...</div>
+    </div>
+  </div>
+
+  <div id="modal-fornecedor" class="modal-overlay">
+    <div class="modal-content">
+      <h3 id="modal-titulo-forn" style="margin-top:0;">Novo Fornecedor</h3>
+      <input type="hidden" id="forn-email-antigo">
+      <div class="form-group"><label>Nome:</label><input type="text" id="forn-nome"></div>
+      <div class="form-group"><label>E-mail:</label><input type="email" id="forn-email"></div>
+      <div class="form-group"><label>Tipo de Material:</label><input type="text" id="forn-tipo"></div>
+      <div class="form-group"><label>Status:</label><select id="forn-status"><option value="Ativo">Ativo</option><option value="Inativo">Inativo</option></select></div>
+      <div class="modal-actions"><button class="btn btn-secondary" onclick="document.getElementById('modal-fornecedor').style.display='none'">Cancelar</button><button class="btn" id="btn-salvar-forn" onclick="salvarFornecedor()">Salvar</button></div>
+    </div>
+  </div>
+
+  <div id="modal-item" class="modal-overlay">
+    <div class="modal-content">
+      <h3 id="modal-titulo-item" style="margin-top:0;">Novo Material</h3>
+      <input type="hidden" id="item-id-antigo">
+      <div class="form-group"><label>Cód. Material:</label><input type="text" id="item-material"></div>
+      <div class="form-group"><label>Descrição Breve:</label><input type="text" id="item-txtbreve"></div>
+      <div class="form-group"><label>Tipo de Material:</label><input type="text" id="item-tipo"></div>
+      <div class="form-group"><label>Especificação Técnica:</label><textarea id="item-especificacao" rows="3"></textarea></div>
+      <div class="form-group"><label>Qtd (12 Meses):</label><input type="number" id="item-qtd"></div>
+      <div class="modal-actions"><button class="btn btn-secondary" onclick="document.getElementById('modal-item').style.display='none'">Cancelar</button><button class="btn" id="btn-salvar-item" onclick="salvarItem()">Salvar</button></div>
+    </div>
+  </div>
+
+  <script>
+    function mudarTela(idTela, elementoClicado) {
+      document.querySelectorAll('.tela').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+      document.getElementById(idTela).classList.add('active');
+      elementoClicado.classList.add('active');
+    }
+
+    window.onload = function() { 
+      try {
+        carregarFornecedores(); 
+        carregarMateriais();
+        carregarFiltrosDashboard();
+      } catch(e) {
+        console.warn("Executando fora do ambiente Google Apps Script");
+      }
+    }
+
+    function carregarFornecedores() { google.script.run.withSuccessHandler(renderizarFornecedores).obterFornecedores(); }
+    function carregarMateriais() { google.script.run.withSuccessHandler(renderizarMateriais).obterItens(); }
+
+    function renderizarFornecedores(dados) { 
+      window.dadosFornecedores = dados;
+      if (dados.length === 0) { document.getElementById('tabela-cadastro-fornecedores').innerHTML = '<p>Sem fornecedores.</p>'; return; }
+      let htmlEnvio = `<table><tr><th style="width:30px;"><input type="checkbox" onchange="selecionarTodos(this)"></th><th>Fornecedor</th><th>Tipo</th></tr>`;
+      let htmlCadastro = `<table><tr><th>Fornecedor</th><th>E-mail</th><th>Tipo</th><th>Status</th><th>Ações</th></tr>`;
+      dados.forEach((f, index) => {
+        let corStatus = f.status === 'Ativo' ? '#2e7d32' : '#d32f2f'; let bgStatus = f.status === 'Ativo' ? '#e8f5e9' : '#ffebee';
+        let badgeStatus = `<span style="background:${bgStatus}; color:${corStatus}; padding:4px 8px; border-radius:4px; font-size:12px;">${f.status}</span>`;
+        htmlCadastro += `<tr><td>${f.nome}</td><td>${f.email}</td><td>${f.tipoMaterial}</td><td>${badgeStatus}</td>
+                             <td><button onclick="abrirModalFornecedorPeloIndex(${index})" style="color:var(--primary-blue); background:none; border:none; cursor:pointer;">Editar</button> | <button onclick="excluirFornecedorUI('${f.email}')" style="color:red; background:none; border:none; cursor:pointer;">Excluir</button></td></tr>`;
+        if (f.status === 'Ativo') htmlEnvio += `<tr><td><input type="checkbox" class="chk-forn" value="${f.email}" onchange="liberarBotaoEnvio()"></td><td>${f.nome}</td><td>${f.tipoMaterial}</td></tr>`;
+      });
+      document.getElementById('tabela-envio').innerHTML = htmlEnvio + `</table>`; document.getElementById('tabela-cadastro-fornecedores').innerHTML = htmlCadastro + `</table>`;
+    }
+
+    function renderizarMateriais(dados) { 
+      window.dadosMaterials = dados;
+      if (dados.length === 0) { document.getElementById('tabela-materiais').innerHTML = '<p>Sem materiais.</p>'; return; }
+      let html = `<table><tr><th>ID</th><th>Descrição</th><th>Tipo</th><th>Especificação</th><th>Qtd</th><th>Ações</th></tr>`;
+      dados.forEach((m, index) => {
+        html += `<tr><td>${m.material}</td><td>${m.txtBreve}</td><td><span style="background:#e0e0e0; padding:2px 6px; border-radius:4px; font-size:11px;">${m.tipoMaterial}</span></td><td>${m.especificacao || '-'}</td><td>${m.quantidade}</td>
+                     <td><button onclick="abrirModalItemPeloIndex(${index})" style="color:var(--primary-blue); background:none; border:none; cursor:pointer;">Editar</button> | <button onclick="excluirItemUI('${m.material}')" style="color:red; background:none; border:none; cursor:pointer;">Excluir</button></td></tr>`;
+      });
+      document.getElementById('tabela-materiais').innerHTML = html + `</table>`;
+    }
+
+    function abrirModalFornecedor(n='', e='', t='', s='Ativo') { document.getElementById('modal-titulo-forn').innerText=e?"Editar":"Novo"; document.getElementById('forn-email-antigo').value=e; document.getElementById('forn-nome').value=n; document.getElementById('forn-email').value=e; document.getElementById('forn-tipo').value=t; document.getElementById('forn-status').value=s; document.getElementById('modal-fornecedor').style.display='flex'; }
+    function abrirModalFornecedorPeloIndex(i) { const f = window.dadosFornecedores[i]; abrirModalFornecedor(f.nome, f.email, f.tipoMaterial, f.status); }
+    function salvarFornecedor() { const b = document.getElementById('btn-salvar-forn'); b.disabled=true; b.innerText="A guardar..."; const ea = document.getElementById('forn-email-antigo').value; const d = {nome:document.getElementById('forn-nome').value,email:document.getElementById('forn-email').value,tipoMaterial:document.getElementById('forn-tipo').value,status:document.getElementById('forn-status').value}; if(ea){google.script.run.withSuccessHandler(r=>{alert(r);document.getElementById('modal-fornecedor').style.display='none';b.disabled=false;b.innerText="Salvar";carregarFornecedores();}).editarFornecedor(ea, d);}else{google.script.run.withSuccessHandler(r=>{alert(r);document.getElementById('modal-fornecedor').style.display='none';b.disabled=false;b.innerText="Salvar";carregarFornecedores();}).adicionarFornecedor(d);} }
+    function excluirFornecedorUI(e) { if(confirm("Excluir?")) google.script.run.withSuccessHandler(r=>{alert(r);carregarFornecedores();}).excluirFornecedor(e); }
+    
+    function abrirModalItem(m='', tb='', tm='', es='', q='') { document.getElementById('modal-titulo-item').innerText=m?"Editar":"Novo"; document.getElementById('item-id-antigo').value=m; document.getElementById('item-material').value=m; document.getElementById('item-txtbreve').value=tb; document.getElementById('item-tipo').value=tm; document.getElementById('item-especificacao').value=es; document.getElementById('item-qtd').value=q; document.getElementById('modal-item').style.display='flex'; }
+    function abrirModalItemPeloIndex(i) { const m = window.dadosMaterials[i]; abrirModalItem(m.material, m.txtBreve, m.tipoMaterial, m.especificacao, m.quantidade); }
+    function salvarItem() { const b = document.getElementById('btn-salvar-item'); b.disabled=true; b.innerText="A guardar..."; const ia = document.getElementById('item-id-antigo').value; const d = {material:document.getElementById('item-material').value,txtBreve:document.getElementById('item-txtbreve').value,tipoMaterial:document.getElementById('item-tipo').value,especificacao:document.getElementById('item-especificacao').value,quantidade:document.getElementById('item-qtd').value}; if(ia){google.script.run.withSuccessHandler(r=>{alert(r);document.getElementById('modal-item').style.display='none';b.disabled=false;b.innerText="Salvar";carregarMateriais();}).editarItem(ia, d);}else{google.script.run.withSuccessHandler(r=>{alert(r);document.getElementById('modal-item').style.display='none';b.disabled=false;b.innerText="Salvar";carregarMateriais();}).adicionarItem(d);} }
+    function excluirItemUI(id) { if(confirm("Excluir?")) google.script.run.withSuccessHandler(r=>{alert(r);carregarMateriais();}).excluirItem(id); }
+
+    function selecionarTodos(m) { document.querySelectorAll('.chk-forn').forEach(c => c.checked = m.checked); liberarBotaoEnvio(); }
+    function liberarBotaoEnvio() { document.getElementById('btn-enviar').disabled = document.querySelectorAll('.chk-forn:checked').length === 0; }
+    function enviarEmails() { const sels = Array.from(document.querySelectorAll('.chk-forn:checked')).map(c => c.value); const btn = document.getElementById('btn-enviar'); btn.innerHTML = "A enviar..."; btn.disabled = true; google.script.run.withSuccessHandler(r => { alert(r); btn.innerHTML = "Disparar E-mails"; btn.disabled = false; }).withFailureHandler(e => { alert(e.message); btn.innerHTML = "Disparar E-mails"; btn.disabled = false; }).dispararEmailsCotacao(sels); }
+
+    function exibirNomeArquivo() { document.getElementById('texto-upload').innerHTML = "Ficheiro selecionado!"; document.getElementById('btn-importar').disabled = false; }
+    function importarRetorno() { const f = document.getElementById('arquivo-upload').files[0]; const btn = document.getElementById('btn-importar'); btn.innerText = "A processar..."; btn.disabled = true; const l = new FileReader(); l.onload = function(e) { google.script.run.withSuccessHandler(m => { alert(m); btn.innerText = "Importar Dados"; btn.disabled = true; document.getElementById('arquivo-upload').value=""; carregarFiltrosDashboard(); }).processarUpload(e.target.result.split(',')[1], f.name, document.getElementById('upload-mes').value, document.getElementById('upload-rodada').value); }; l.readAsDataURL(f); }
+
+    // ==========================================
+    // LÓGICA DO DASHBOARD
+    // ==========================================
+    google.charts.load('current', {'packages':['corechart']});
+
+    function carregarFiltrosDashboard() {
+      document.getElementById('dash-mensagem').innerText = "A carregar filtros...";
+      document.getElementById('dash-mensagem').style.display = 'block';
+      
+      google.script.run.withSuccessHandler(res => {
+        const selectMes = document.getElementById('dash-filtro-mes');
+        const selectMat = document.getElementById('dash-filtro-material');
+        const selectRod = document.getElementById('dash-filtro-rodada');
+        
+        selectMes.innerHTML = '<option value="">Selecione...</option>';
+        selectMat.innerHTML = '<option value="">Todos os Tipos (Geral)</option>';
+        selectRod.innerHTML = '<option value="">Última Rodada (Evolução)</option>';
+        
+        res.meses.forEach(mes => selectMes.innerHTML += `<option value="${mes}">${mes}</option>`);
+        res.materiais.forEach(tipo => selectMat.innerHTML += `<option value="${tipo}">${tipo}</option>`);
+        res.rodadas.forEach(rod => selectRod.innerHTML += `<option value="${rod}">Rodada ${rod}</option>`);
+        
+        document.getElementById('dash-mensagem').innerText = "Selecione um Mês/Ano acima para gerar o relatório.";
+      }).withFailureHandler(e => {
+        document.getElementById('dash-mensagem').innerText = "Erro ao carregar filtros: " + e.message;
+      }).obterFiltrosDashboard();
+    }
+
+    function gerarDashboard() {
+      const mes = document.getElementById('dash-filtro-mes').value;
+      const material = document.getElementById('dash-filtro-material').value;
+      const rodada = document.getElementById('dash-filtro-rodada').value;
+
+      if (!mes) return;
+
+      document.getElementById('dash-mensagem').innerText = "A processar dados, por favor aguarde...";
+      document.getElementById('dash-mensagem').style.display = 'block';
+      document.getElementById('dash-kpis').style.display = 'none';
+      document.getElementById('dash-conteudo').style.display = 'none';
+
+      google.script.run
+        .withSuccessHandler(desenharRelatorio)
+        .withFailureHandler(e => { document.getElementById('dash-mensagem').innerText = "Erro no servidor: " + e.message; })
+        .processarDadosDashboard(mes, material, rodada);
+    }
+
+    function formatarMoeda(valor) {
+      if(isNaN(valor)) return "R$ 0,00";
+      return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function desenharRelatorio(dados) {
+      try {
+        if (!dados) {
+          document.getElementById('dash-mensagem').innerText = "Nenhum retorno encontrado para este filtro.";
+          return;
+        }
+
+        document.getElementById('dash-mensagem').style.display = 'none';
+        document.getElementById('dash-kpis').style.display = 'grid';
+        document.getElementById('dash-conteudo').style.display = 'block';
+
+        document.getElementById('kpi-menor-preco').innerText = formatarMoeda(dados.kpis.menorPreco);
+        document.getElementById('kpi-melhor-fornecedor').innerText = dados.kpis.melhorFornecedor;
+
+        let htmlTabela = `<table style="font-size: 13px;">
+                            <tr><th>Fornecedor</th><th>Rodada</th><th>Custo Total</th><th>Meta de Redução</th></tr>`;
+        
+        dados.tabela.forEach((linha, index) => {
+          let isVencedor = index === 0;
+          let estiloLinha = isVencedor ? 'background-color: #e8f5e9; font-weight: bold; color: #1b5e20;' : '';
+          let estiloReducao = linha.percReducao > 0 ? 'color: #d32f2f; font-weight: 600;' : 'color: #2e7d32;';
+          let textoReducao = isVencedor ? 'Referência' : `Reduzir ${linha.percReducao.toFixed(1)}%`;
+
+          htmlTabela += `<tr style="${estiloLinha}">
+                           <td>${isVencedor ? '🏆 ' : ''}${linha.fornecedor}</td>
+                           <td style="text-align:center;">${linha.rodada}</td>
+                           <td>${formatarMoeda(linha.precoTotal)}</td>
+                           <td style="${estiloReducao}">${textoReducao}</td>
+                         </tr>`;
+        });
+        htmlTabela += `</table>`;
+        document.getElementById('tabela-decisao-container').innerHTML = htmlTabela;
+
+        google.charts.setOnLoadCallback(() => {
+          var dataChart = new google.visualization.DataTable();
+          dataChart.addColumn('string', 'Rodada');
+          dataChart.addColumn('number', 'Preço Total (R$)');
+          dataChart.addRows(dados.grafico);
+
+          var options = {
+            legend: 'none',
+            colors: ['#1a73e8'],
+            lineWidth: 3,
+            pointSize: 6,
+            vAxis: { format: 'currency' },
+            hAxis: { title: 'Rodadas de Cotação' },
+            chartArea: { width: '80%', height: '70%' },
+            animation: { startup: true, duration: 800, easing: 'out' }
+          };
+
+          var chart = new google.visualization.LineChart(document.getElementById('grafico-evolucao'));
+          chart.draw(dataChart, options);
+        });
+
+      } catch (erroLocal) {
+        console.error(erroLocal);
+        document.getElementById('dash-mensagem').innerText = "Erro ao desenhar ecrã: " + erroLocal.message;
+        document.getElementById('dash-mensagem').style.display = 'block';
+      }
+    }
+  </script>
+</body>
+</html>
